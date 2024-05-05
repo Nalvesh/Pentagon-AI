@@ -1,4 +1,7 @@
 "use client";
+
+import axios from "axios";
+import { useState } from "react";
 import { ImageIcon,VideoIcon,CodeIcon,MusicIcon,MessageSquare, Check, Zap } from "lucide-react";
 
 import { Dialog,
@@ -13,6 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "./ui/card";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
+import toast from "react-hot-toast";
+
+
 
 const tools=[
     {
@@ -46,9 +52,31 @@ const tools=[
 
 export const ProModal =() =>{
     const proModal= useProModal();
+    const [loading, setLoading] = useState(false);
+
+    const onSubscribe = async () =>{
+
+        try{
+            
+            setLoading(true);
+
+           const response =  await axios.get("/api/stripe");
+
+
+           window.location.href = response.data.url;
+        }catch(error){
+            console.log(error," STRIPE_CLIENT_ERROR");
+            toast.error("something went wrong");
+            
+        }finally{
+            setLoading(false);
+        }
+
+    };
+
     return(
 
-        <Dialog open={proModal.isOpen} onOpenChange={proModal.onClose}>
+        <Dialog open={loading || proModal.isOpen} onOpenChange={proModal.onClose}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle className="flex justify-center items-center flex-col gap-y-4 pb2">
@@ -87,12 +115,17 @@ export const ProModal =() =>{
                     <Button 
                     size="lg"
                     variant="premium"
-                    className="w-full">
+                    className="w-full"
+                    onClick={onSubscribe}
+                    disabled={loading}
+                    
+                    
+                    >
                        Upgrade 
                        <Zap className="w-4 h-4 ml-2 fill-white"/>
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-    )
-}
+    );
+};

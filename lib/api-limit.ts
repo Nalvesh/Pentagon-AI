@@ -57,7 +57,7 @@ export const getApiLimitCount = async ()=>{
         return 0;
     }
 
-    const userApiLimit =await primadb.userApiLimit.findUnique({
+    const userApiLimit = await primadb.userApiLimit.findUnique({
         where:{
             userId
         }

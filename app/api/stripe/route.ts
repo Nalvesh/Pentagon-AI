@@ -1,78 +1,70 @@
-import{auth}from "@clerk/nextjs";
-import { currentUser } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 
-
-import primadb from "@/lib/prismadb";
+import { prismadb } from "@/lib/prismadb";
 import { stripe } from "@/lib/stripe";
 import { absoluteUrl } from "@/lib/utils";
 
+const settingsUrl = absoluteUrl("/settings");
 
-const settingsUrl=absoluteUrl("/settings");
+export async function GET() {
+  try {
+    const { userId } = auth();
+    const user = await currentUser();
 
-export async function GET(){
+    if (!userId || !user)
+      return new NextResponse("Unauthorized.", { status: 401 });
 
-try{
-const {userId}=auth();
-const user = await currentUser();
-
-if(!userId||user){
-
-    return new NextResponse("Unauthorised",{status:401});
-}
-
-const userSubscription = await primadb.userSubscription.findUnique({
-
-    where:{
-        userId
-    }
-});
-
-if(userSubscription && userSubscription.stripeCustomerId){
-
-    const stripeSession= await stripe.billingPortal.sessions.create({
-        customer:userSubscription.stripeCustomerId,
-        return_url: settingsUrl,
+    const userSubscription = await prismadb.userSubscription.findUnique({
+      where: {
+        userId,
+      },
     });
 
-    return new NextResponse(JSON.stringify({url:stripeSession.url}))
-}
+    if (userSubscription && userSubscription.stripeCustomerId) {
+      const stripeSession = await stripe.billingPortal.sessions.create({
+        customer: userSubscription.stripeCustomerId,
+        return_url: settingsUrl,
+      });
 
-const stripeSession=await stripe.checkout.sessions.create({
-    success_url: settingsUrl,
-    cancel_url: settingsUrl,
-    payment_method_types:["card"],
-    mode:"subscription",
-    billing_address_collection:"auto",
-    customer_email: user.emailAddresses[0].emailAddresses,
-    line_items:[{
+      return new NextResponse(JSON.stringify({ url: stripeSession.url }), {
+        status: 200,
+      });
+    }
 
-        price_data:{
-            currency:"USD",
-            product_data:{
-                name:"Pentgon Pro",
-                description:"Unlimited AI Generations",
+    const stripeSession = await stripe.checkout.sessions.create({
+      success_url: "http://localhost:3000/settings",
+      cancel_url: "http://localhost:3000/settings",
+      payment_method_types: ["card"],
+      mode: "subscription",
+      billing_address_collection: "required",
+      customer_email: user.emailAddresses[0].emailAddress,
+      line_items: [
+        {
+          price_data: {
+            currency: "INR",
+            product_data: {
+              name: "Pentagoan pro",
+              description: "Unlimited AI Generations.",
             },
-            unit_amount:2000,
-            recurring:{
-                interval:"month"
-            }
-
+            unit_amount: 2000, // $20
+            recurring: {
+              interval: "month",
+            },
+          },
+          quantity: 1,
         },
-        quantity:1,
-
-    }], 
-    metadata:{
+      ],
+      metadata: {
         userId,
-    },
-});
+      },
+    });
 
-return new NextResponse(JSON.stringify({ url: stripeSession.url}));
-
-}catch(error){
-
-    console.log("[STRIPE_ERROR]",error);
-    return new NextResponse("Internal error",{status:500});
-}
-
+    return new NextResponse(JSON.stringify({ url: stripeSession.url }), {
+      status: 200,
+    });
+  } catch (error: unknown) {
+    console.error("[STRIPE_ERROR]: ", error);
+    return new NextResponse("Internal server error.", { status: 500 });
+  }
 }

@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { auth } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
-
+import { checkSubscription } from "@/lib/subscription";
 import { increraseApiLimit, checkApiLimit} from "@/lib/api-limit";
 
 
@@ -38,8 +38,10 @@ export async function POST(
         }
 
         const freeTrial =await checkApiLimit();
+        const isPro = await checkSubscription();
 
-        if(!freeTrial){
+
+        if(!freeTrial && !isPro){
             return new NextResponse("Free trial has expired.",{status:403});
         }
 
@@ -50,8 +52,9 @@ export async function POST(
             messages:[instructionMessage, ...messages]
         });
 
+        if(!isPro){
         await increraseApiLimit();
-
+        }
         return NextResponse.json(response.choices[0].message);
 
     } catch (error) {
