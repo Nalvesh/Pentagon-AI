@@ -9,7 +9,7 @@ import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { Music, Send } from "lucide-react";
 
-import { Heading } from "@/components/heading";
+import { Heading } from "@/components/Heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
