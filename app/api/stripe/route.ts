@@ -33,8 +33,8 @@ export async function GET() {
     }
 
     const stripeSession = await stripe.checkout.sessions.create({
-      success_url: "https://pentagonai-efkgk82b5-nalveshs-projects.vercel.app/settings",
-      cancel_url: "https://pentagonai-efkgk82b5-nalveshs-projects.vercel.app/settings",
+      success_url: settingsUrl,
+      cancel_url: settingsUrl,
       payment_method_types: ["card"],
       mode: "subscription",
       billing_address_collection: "required",
